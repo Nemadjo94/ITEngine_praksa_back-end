@@ -17,23 +17,19 @@ namespace Praksa2.Repo.Models
         [Required]
         public string Username { get; set; }
         [Required]
-        public string Password { get; set; }
+        public byte[] PasswordHash { get; set; }
+        [Required]
+        public byte[] PasswordSalt { get; set; }
         public string PhoneNumber { get; set; }
         public byte[] Photo { get; set; }
+        [Required]
+        public string Token { get; set; }
+        [Required]
+        public string Role { get; set; }
+        //Required for soft deleting
+        public bool isDeleted { get; set; }
 
         public virtual ICollection<Users> UsersCollection { get; set; }
     }
 
-    public class UsersDto
-    {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string FullName
-        {
-            get
-            {
-                return FirstName + " " + LastName;
-            }
-        }
-    }
 }
