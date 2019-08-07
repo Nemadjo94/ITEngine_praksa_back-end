@@ -48,8 +48,8 @@ namespace Praksa2.API.Controllers
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new Claim[]{
-                    new Claim(ClaimTypes.Name, user.ID.ToString()),
-                    new Claim(ClaimTypes.Role, user.Role)
+                    new Claim(ClaimTypes.Name, user.Id.ToString()),
+                    //new Claim(ClaimTypes.Role, user.Role)
                 }),
                 Expires = DateTime.UtcNow.AddDays(1),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
@@ -60,8 +60,8 @@ namespace Praksa2.API.Controllers
             // Return basic user info ( without password ) and token to store to client side
             return Ok(new
             {
-                ID = user.ID,
-                Username = user.Username,
+                ID = user.Id,
+                Username = user.UserName,
                 Email = user.Email,
                 Firstname = user.FirstName,
                 Lastname = user.LastName,
@@ -91,12 +91,12 @@ namespace Praksa2.API.Controllers
             }
         }
 
-        [Authorize(Roles = Roles.Admin)]
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public IActionResult GetAll()
         {
             // Allow only admins to get all user records
-            if (!User.IsInRole(Roles.Admin))
+            if (!User.IsInRole("Admin"))
             {
                 return Forbid();
             }
@@ -106,7 +106,7 @@ namespace Praksa2.API.Controllers
             return Ok(userDtos);
         }
 
-        [Authorize(Roles = Roles.Admin)]
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public IActionResult GetById(int id)
         {
@@ -114,7 +114,7 @@ namespace Praksa2.API.Controllers
 
             // Allow only admins to get other user records
             var currentUserId = int.Parse(User.Identity.Name);
-            if (id != currentUserId && !User.IsInRole(Roles.Admin))
+            if (id != currentUserId && !User.IsInRole("Admin"))
             {
                 return Forbid();
             }
@@ -128,17 +128,17 @@ namespace Praksa2.API.Controllers
             return Ok(userDto);
         }
 
-        [Authorize(Roles = Roles.Admin)]
+        [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
         public IActionResult Update(int id, [FromBody]UsersDto userDto)
         {
             // Map dto to entity and set id
             var user = _mapper.Map<Users>(userDto);
-            user.ID = id;
+            user.Id = id.ToString();
 
             // Allow only admins to update other user records
             var currentUserId = int.Parse(User.Identity.Name);
-            if (id != currentUserId && !User.IsInRole(Roles.Admin))
+            if (id != currentUserId && !User.IsInRole("Admin"))
             {
                 return Forbid();
             }
@@ -156,7 +156,7 @@ namespace Praksa2.API.Controllers
             }
         }
 
-        [Authorize(Roles = Roles.Admin)]
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public IActionResult Delete(int id)
         {
@@ -164,7 +164,7 @@ namespace Praksa2.API.Controllers
 
             // Allow only admins to access other user records
             var currentUserId = int.Parse(User.Identity.Name);
-            if(id != currentUserId && !User.IsInRole(Roles.Admin))
+            if(id != currentUserId && !User.IsInRole("Admin"))
             {
                 return Forbid();
             }

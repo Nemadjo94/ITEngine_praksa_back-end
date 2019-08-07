@@ -19,6 +19,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Swagger;
+using Praksa2.Repo.Models;
+using Microsoft.AspNetCore.Identity;
 
 namespace Praksa2.API
 {
@@ -35,8 +37,27 @@ namespace Praksa2.API
         [Obsolete]
         public void ConfigureServices(IServiceCollection services)
         {
+
+            //services.AddEntityFrameworkSqlServer()
+            //    .AddDbContext<Context>(options =>
+            //    {
+            //        options.UseSqlServer(Configuration["DefaultConnection"],
+            //            sqlServerOptionsAction: sqlOptions =>
+            //            {
+            //                sqlOptions.MigrationsAssembly(typeof(Startup).Name);
+            //                sqlOptions.EnableRetryOnFailure(maxRetryCount: 10, maxRetryDelay: TimeSpan.FromSeconds(30), errorNumbersToAdd: null);
+            //            });
+            //    },
+            //    ServiceLifetime.Scoped
+            //    );
+
+            services.AddDbContext<Context>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+            services.AddDefaultIdentity<Users>()
+             .AddRoles<Roles>()
+             .AddEntityFrameworkStores<Context>()
+             .AddDefaultTokenProviders();
+
             services.AddCors();
-            services.AddDbContext<Context>(x => x.UseSqlServer(@"Server=DESKTOP-VQT6JL4\SQLEXPRESS;Database=Test;Trusted_Connection=True;"));
             services.AddAutoMapper(); // Throws obsolete, fix later
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
             
@@ -121,10 +142,7 @@ namespace Praksa2.API
                 c.RoutePrefix = string.Empty;
             });
 
-            //app.UseMvc(opt =>
-            //{
-            //    opt.MapRoute("Default", "{controller=Users}/{action=Get}");
-            //});
+           
             
         }
     }

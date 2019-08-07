@@ -15,37 +15,50 @@ namespace Praksa2.Service
         {
             _context = context;
         }
+
+        /// <summary>
+        /// Method to Authenticate users by passing username and password
+        /// </summary>
+        /// <param name="username"></param>
+        /// <param name="password"></param>
+        /// <returns></returns>
         public Users Authenticate(string username, string password)
         {
             // If input is empty just return null
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
                 return null;
 
-            var user = _context.Users.SingleOrDefault(x => x.Username == username);
+            var user = _context.Users.SingleOrDefault(x => x.UserName == username.ToUpper());
 
-            // Check if username exists
-            if (user == null)
+            //Check if username exists
+             if (user == null)
                 return null;
 
-            // Check if password is correct
-            if(!PasswordHandler.VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
-            {
-                return null;
-            }
+            //Check if password is correct
+            //if (!PasswordHandler.VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
+            //    {
+            //        return null;
+            //    }
 
             // Succesful authentication
-            return user;
+            return user; 
 
         }
 
+        /// <summary>
+        /// Method to create new users
+        /// </summary>
+        /// <param name="user"></param>
+        /// <param name="password"></param>
+        /// <returns></returns>
         public Users Create(Users user, string password)
         {
             // Validate password
             if (string.IsNullOrWhiteSpace(password))
                 throw new AppException("Password is required");
 
-            if(_context.Users.Any(x => x.Username == user.Username))
-                throw new AppException("Username \"" + user.Username + "\" is already taken");
+            if (_context.Users.Any(x => x.UserName == user.UserName))
+                throw new AppException("Username \"" + user.UserName + "\" is already taken");
 
             byte[] passwordHash, passwordSalt;
             PasswordHandler.CreatePasswordHash(password, out passwordHash, out passwordSalt);
@@ -56,6 +69,11 @@ namespace Praksa2.Service
             return user;
         }
 
+
+        /// <summary>
+        /// Method to delete users by passing id
+        /// </summary>
+        /// <param name="id"></param>
         public void Delete(int id)
         {
             // Find user by id
@@ -67,30 +85,44 @@ namespace Praksa2.Service
             }
         }
 
+        /// <summary>
+        /// Method to get all users
+        /// </summary>
+        /// <returns></returns>
         public IEnumerable<Users> GetAll()
         {
             return _context.Users;
         }
 
+        /// <summary>
+        /// Get user by passing his id 
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         public Users GetById(int id)
         {
             return _context.Users.Find(id);
         }
 
+        /// <summary>
+        /// Method for updating users
+        /// </summary>
+        /// <param name="userParam"></param>
+        /// <param name="password"></param>
         public void Update(Users userParam, string password = null)
         {
             // Find user by id
-            var user = _context.Users.Find(userParam.ID);
+            var user = _context.Users.Find(userParam.Id);
 
             // If there is no user throw app exception
             if (user == null)
                 throw new AppException("User not found");
 
-            if(userParam.Username != user.Username)
+            if (userParam.UserName != user.UserName)
             {
                 // Username has changed so check if the new username is already taken
-                if (_context.Users.Any(x => x.Username == userParam.Username))
-                    throw new AppException("Username " + userParam.Username + " is already taken");
+                if (_context.Users.Any(x => x.UserName == userParam.UserName))
+                    throw new AppException("Username " + userParam.UserName + " is already taken");
             }
 
             // Update user properties
@@ -98,7 +130,7 @@ namespace Praksa2.Service
             user.LastName = userParam.LastName;
             user.Email = userParam.Email;
             user.PhoneNumber = userParam.PhoneNumber;
-            user.Username = userParam.Username;
+            user.UserName = userParam.UserName;
 
             // update password if it was entered
             if (!string.IsNullOrWhiteSpace(password))
@@ -106,8 +138,8 @@ namespace Praksa2.Service
                 byte[] passwordHash, passwordSalt;
                 PasswordHandler.CreatePasswordHash(password, out passwordHash, out passwordSalt);
 
-                user.PasswordHash = passwordHash;
-                user.PasswordSalt = passwordSalt;
+                //user.PasswordHash = passwordHash;
+                //user.PasswordSalt = passwordSalt;
             }
 
             _context.Users.Update(user);
