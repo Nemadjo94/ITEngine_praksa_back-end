@@ -11,18 +11,11 @@ namespace Praksa2.Repo.Models
     public class Roles : IdentityRole
     {
         // Description for the given role
-        public string Description { get; set; }
-        // Creation date for the given role
-        public DateTime CreationDate { get; set; }
+        //public string Description { get; set; }
 
         public Roles() : base() {}
 
         public Roles(string roleName) : base(roleName)
-        {
-
-        }
-
-        public Roles(string roleName, string description, DateTime creationDate) : base(roleName)
         {
 
         }

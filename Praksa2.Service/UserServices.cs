@@ -138,8 +138,8 @@ namespace Praksa2.Service
                 byte[] passwordHash, passwordSalt;
                 PasswordHandler.CreatePasswordHash(password, out passwordHash, out passwordSalt);
 
-                //user.PasswordHash = passwordHash;
-                //user.PasswordSalt = passwordSalt;
+                //user.PasswordHash = ;
+
             }
 
             _context.Users.Update(user);

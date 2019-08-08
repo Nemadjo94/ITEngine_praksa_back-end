@@ -1,14 +1,14 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Praksa2.Repo.Models;
+using System;
 
 namespace Praksa2.Repo
 {
-    public class Context : IdentityDbContext<Users>
+    public class Context : IdentityDbContext<Users, Roles, string>
     {
         public Context(DbContextOptions<Context> options) : base(options)
         {
-
         }
         //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         //{

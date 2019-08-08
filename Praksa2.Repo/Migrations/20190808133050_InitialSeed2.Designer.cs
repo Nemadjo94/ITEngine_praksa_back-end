@@ -10,8 +10,8 @@ using Praksa2.Repo;
 namespace Praksa2.Repo.Migrations
 {
     [DbContext(typeof(Context))]
-    [Migration("20190807143554_PasswordSaltAdded")]
-    partial class PasswordSaltAdded
+    [Migration("20190808133050_InitialSeed2")]
+    partial class InitialSeed2
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -167,8 +167,6 @@ namespace Praksa2.Repo.Migrations
                         .HasMaxLength(256);
 
                     b.Property<string>("PasswordHash");
-
-                    b.Property<string>("PasswordSalt");
 
                     b.Property<string>("PhoneNumber");
 

@@ -18,7 +18,6 @@ namespace Praksa2.Repo.Models
         [Required]
         [MaxLength(100)]
         public string LastName { get; set; }
-        public string PasswordSalt { get; set; }
         public string Photo { get; set; }
         //Required for soft deleting
         public bool IsDeleted { get; set; }

@@ -8,93 +8,90 @@ using System.Threading.Tasks;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Praksa2.Repo.Models;
 using Praksa2.Service;
 using Praksa2.Service.Dtos;
+using Microsoft.Extensions.Configuration;
 
 namespace Praksa2.API.Controllers
 {
     [Authorize]
     [ApiController]
-    [Route("[controller]")]
+    [Route("[controller]/[action]")]
     public class UsersController : ControllerBase
     {
         private IUserServices _userServices;
         private IMapper _mapper;
         private readonly AppSettings _appSettings;
+        private UserManager<IdentityUser> _userManager;
+        private SignInManager<IdentityUser> _signInManager;
+        private readonly IConfiguration _configuration;
 
-        public UsersController(IUserServices userServices, IMapper mapper, IOptions<AppSettings> appSettings)
+        public UsersController(IUserServices userServices, IMapper mapper, IOptions<AppSettings> appSettings, UserManager<IdentityUser> userManager, IConfiguration configuration, SignInManager<IdentityUser> signInManager)
         {
             _userServices = userServices;
             _mapper = mapper;
             _appSettings = appSettings.Value;
+            _userManager = userManager;
+            _configuration = configuration;
+            _signInManager = signInManager;
         }
 
         [AllowAnonymous]
         [HttpPost("authenticate")]
-        public IActionResult Authenticate([FromBody]UsersDto userDto)
+        public async Task<object> Authenticate([FromBody]UsersDto userDto)
         {
-            var user = _userServices.Authenticate(userDto.Username, userDto.Password);
+            var result = await _signInManager.PasswordSignInAsync(userDto.Email, userDto.Password, false, false);
 
-            if (user == null)
-                return BadRequest(new { message = "Username or password is incorrect" });
-
-            // Handle our JWT token
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
-            var tokenDescriptor = new SecurityTokenDescriptor
+            if (result.Succeeded)
             {
-                Subject = new ClaimsIdentity(new Claim[]{
-                    new Claim(ClaimTypes.Name, user.Id.ToString()),
-                    //new Claim(ClaimTypes.Role, user.Role)
-                }),
-                Expires = DateTime.UtcNow.AddDays(1),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            var tokenString = tokenHandler.WriteToken(token);
+                var appUser = _userManager.Users.SingleOrDefault(r => r.Email == userDto.Email);
+                return await GenerateJwtToken(userDto.Email, appUser);
+            }
 
-            // Return basic user info ( without password ) and token to store to client side
-            return Ok(new
-            {
-                ID = user.Id,
-                Username = user.UserName,
-                Email = user.Email,
-                Firstname = user.FirstName,
-                Lastname = user.LastName,
-                Phonenumber = user.PhoneNumber,
-                Photo = user.Photo,
-                Token = tokenString
-            });
+            throw new AppException("INVALID_AUTHENTICATION");
         }
+
+        //[Authorize(Roles = "Admin")]
+        //[HttpPost]
+        //public async Task<object> CreateUser([FromBody]UsersDto usersDto)
+        //{
+        //    var user = new IdentityUser
+        //    {
+        //        f
+        //    };
+        //}
 
         [AllowAnonymous]
         [HttpPost("register")]
-        public IActionResult Register([FromBody]UsersDto usersDto)
+        public async Task<object> Register([FromBody]UsersDto usersDto)
         {
             // Map dto to entity
-            var user = _mapper.Map<Users>(usersDto);
+            var user = new IdentityUser {
+                UserName = usersDto.Email,
+                Email = usersDto.Email,
+            };
 
-            try
+            var result = await _userManager.CreateAsync(user, usersDto.Password);
+
+            if (result.Succeeded)
             {
-                // Save
-                _userServices.Create(user, usersDto.Password);
-                return Ok();
+                await _signInManager.SignInAsync(user, false);
+                return await GenerateJwtToken(usersDto.Email, user);            
             }
-            catch(AppException ex)
-            {
-                // Return error message if there's an exception
-                return BadRequest(new { message = ex.Message });
-            }
+
+            throw new AppException("Unknown Error");
         }
 
         [Authorize(Roles = "Admin")]
         [HttpGet]
-        public IActionResult GetAll()
+        public async Task<IActionResult> GetAll()
         {
+
             // Allow only admins to get all user records
             if (!User.IsInRole("Admin"))
             {
@@ -108,9 +105,9 @@ namespace Praksa2.API.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        public async Task<IActionResult> GetById(int id)
         {
-            var user = _userServices.GetById(id);
+            var result = await _userManager.FindByIdAsync(id.ToString());
 
             // Allow only admins to get other user records
             var currentUserId = int.Parse(User.Identity.Name);
@@ -119,18 +116,18 @@ namespace Praksa2.API.Controllers
                 return Forbid();
             }
 
-            if (user == null)
+            if (result == null)
             {
                 return NotFound();
             }
 
-            var userDto = _mapper.Map<UsersDto>(user);
-            return Ok(userDto);
+            
+            return Ok(result);
         }
 
         [Authorize(Roles = "Admin")]
         [HttpPut("{id}")]
-        public IActionResult Update(int id, [FromBody]UsersDto userDto)
+        public async Task<IActionResult> Update(int id, [FromBody]UsersDto userDto)
         {
             // Map dto to entity and set id
             var user = _mapper.Map<Users>(userDto);
@@ -146,7 +143,7 @@ namespace Praksa2.API.Controllers
             try
             {
                 // Save
-                _userServices.Update(user, userDto.Password);
+                 _userServices.Update(user, userDto.Password);
                 return Ok();
             }
             catch(AppException ex)
@@ -158,7 +155,7 @@ namespace Praksa2.API.Controllers
 
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        public async Task <IActionResult> Delete(int id)
         {
             _userServices.Delete(id);
 
@@ -170,6 +167,31 @@ namespace Praksa2.API.Controllers
             }
 
             return Ok();
+        }
+
+        private async Task<object> GenerateJwtToken(string email, IdentityUser user)
+        {
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, email),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id)
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtKey"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var expires = DateTime.Now.AddDays(Convert.ToDouble(_configuration["JwtExpireDays"]));
+
+            var token = new JwtSecurityToken(
+                _configuration["JwtIssuer"],
+                _configuration["JwtIssuer"],
+                claims,
+                expires: expires,
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+
         }
 
 

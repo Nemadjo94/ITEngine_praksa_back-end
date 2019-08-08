@@ -16,9 +16,9 @@ namespace Praksa2.API
     {
         public static void Main(string[] args)
         {
-            CreateWebHostBuilder(args).Run();
+            //CreateWebHostBuilder(args).Run();
             //var host = CreateWebHostBuilder(args);
-            //using(var scope = host.Services.CreateScope())
+            //using (var scope = host.Services.CreateScope())
             //{
             //    var dbContext = scope.ServiceProvider.GetService<Context>();
 
@@ -26,6 +26,21 @@ namespace Praksa2.API
             //}
             //host.Run();
 
+            var host = CreateWebHostBuilder(args);
+            using(var scope = host.Services.CreateScope())
+            {
+                var services = scope.ServiceProvider;
+                try
+                {
+                    var context = services.GetRequiredService<Context>();
+                    //IdentityDataInitializer.InitializeAsync(context, services).Wait();
+                }
+                catch (Exception exc)
+                {
+                    
+                }
+            }
+            host.Run();
 
         }
 

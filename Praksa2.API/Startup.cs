@@ -21,6 +21,7 @@ using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.Swagger;
 using Praksa2.Repo.Models;
 using Microsoft.AspNetCore.Identity;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Praksa2.API
 {
@@ -51,7 +52,12 @@ namespace Praksa2.API
             //    ServiceLifetime.Scoped
             //    );
 
+            //Register our db context to services
             services.AddDbContext<Context>(options => options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection")));
+
+            services.AddScoped<RoleManager<Roles>>();
+
+            //Register our identity
             services.AddDefaultIdentity<Users>()
              .AddRoles<Roles>()
              .AddEntityFrameworkStores<Context>()
@@ -59,9 +65,8 @@ namespace Praksa2.API
 
             services.AddCors();
             services.AddAutoMapper(); // Throws obsolete, fix later
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
             
-
+            //Register Swagger
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new Info { Title = "My API", Version = "v1" });
@@ -71,49 +76,36 @@ namespace Praksa2.API
             var appSettingsSection = Configuration.GetSection("AppSettings");
             services.Configure<AppSettings>(appSettingsSection);
 
-            // Configure JWT authentication
-            var appSettings = appSettingsSection.Get<AppSettings>();
-            var key = Encoding.ASCII.GetBytes(appSettings.Secret);
-            services.AddAuthentication(x =>
+            // Add JWT Authentication
+            JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear(); // remove default claims
+            services.AddAuthentication(options =>
             {
-                x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-            .AddJwtBearer(x =>
+            .AddJwtBearer(cfg =>
             {
-                x.Events = new JwtBearerEvents
+                cfg.RequireHttpsMetadata = false;
+                cfg.SaveToken = true;
+                cfg.TokenValidationParameters = new TokenValidationParameters
                 {
-                    OnTokenValidated = context =>
-                    {
-                        var userService = context.HttpContext.RequestServices.GetRequiredService<IUserServices>();
-                        var userId = int.Parse(context.Principal.Identity.Name);
-                        var user = userService.GetById(userId);
-                        if (user == null)
-                        {
-                            // Return unauthorized if user no longer exists
-                            context.Fail("Unauthorized");
-                        }
-
-                        return Task.CompletedTask;
-                    }
-                };
-                x.RequireHttpsMetadata = false;
-                x.SaveToken = true;
-                x.TokenValidationParameters = new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = false,
-                    ValidateAudience = false
+                    ValidIssuer = Configuration["JwtIssuer"],
+                    ValidAudience = Configuration["JwtIssuer"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JwtKey"])),
+                    ClockSkew = TimeSpan.Zero // remove delay of token when expire
                 };
             });
 
             // Configure dependency injection for application services
             services.AddScoped<IUserServices, UserServices>();
+
+            // Add Mvc
+            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, Context context, IServiceProvider service)
         {
             if (env.IsDevelopment())
             {
@@ -124,6 +116,11 @@ namespace Praksa2.API
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
+            // Use Authentication
+            app.UseAuthentication();
+
+            // Seed some data
+            IdentityDataInitializer.SeedData(service).Wait();
 
             // global cors policy
             app.UseCors(x => x
@@ -132,15 +129,18 @@ namespace Praksa2.API
                 .AllowAnyHeader()
             );
 
-            app.UseAuthentication();
+           
 
+            // Add Swagger and Swagger UI
             app.UseSwagger();
-
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
                 c.RoutePrefix = string.Empty;
             });
+
+            // Ensure our tables are created
+            context.Database.EnsureCreated();
 
            
             
