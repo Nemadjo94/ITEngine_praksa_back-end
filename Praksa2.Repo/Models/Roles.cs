@@ -10,9 +10,6 @@ namespace Praksa2.Repo.Models
     /// </summary>
     public class Roles : IdentityRole
     {
-        // Description for the given role
-        //public string Description { get; set; }
-
         public Roles() : base() {}
 
         public Roles(string roleName) : base(roleName)

@@ -26,21 +26,11 @@ namespace Praksa2.API
             }
         }
 
-        public static async Task SeedData(IServiceProvider serviceProvider)
+        public static async Task SeedSomeUsers(IServiceProvider serviceProvider)
         {
-            await InitializeAsync(serviceProvider);
-
             var UserManager = serviceProvider.GetRequiredService<UserManager<Users>>();
 
-            await SeedUsers(UserManager);
-
-        }
-
-
-
-        public static async Task SeedUsers(UserManager<Users> userManager)
-        {
-            if(userManager.FindByNameAsync("user1").Result == null)
+            if (UserManager.FindByNameAsync("user1").Result == null)
             {
                 Users user = new Users();
                 user.UserName = "user1";
@@ -49,15 +39,15 @@ namespace Praksa2.API
                 user.LastName = "Djordjevic";
                 user.PhoneNumber = "+555 555 555";
 
-                IdentityResult result = userManager.CreateAsync(user, "123456").Result;
+                IdentityResult result = UserManager.CreateAsync(user, "Nemanja994@").Result;
 
                 if (result.Succeeded)
                 {
-                    userManager.AddToRoleAsync(user, "User").Wait();
+                     UserManager.AddToRoleAsync(user, "User").Wait();
                 }
             }
 
-            if (userManager.FindByNameAsync("user2").Result == null)
+            if (UserManager.FindByNameAsync("user2").Result == null)
             {
                 Users user = new Users();
                 user.UserName = "user2";
@@ -66,33 +56,26 @@ namespace Praksa2.API
                 user.LastName = "Djordjevic";
                 user.PhoneNumber = "+555 555 666";
 
-                IdentityResult result = userManager.CreateAsync(user, "123456").Result;
+                IdentityResult result = UserManager.CreateAsync(user, "Mihajlo000@").Result;
 
                 if (result.Succeeded)
                 {
-                    userManager.AddToRoleAsync(user, "User").Wait();
+                    UserManager.AddToRoleAsync(user, "User").Wait();
                 }
             }
+
         }
 
-        //public static void SeedRoles(RoleManager<Roles> roleManager)
-        //{
-        //    //if (!roleManager.RoleExistsAsync("User").Result)
-        //    //{
-        //    //    Roles role = new Roles();
-        //    //    role.Name = "User";
-        //    //    role.Description = "Performs normal operations.";
-        //    //    IdentityResult identityResult = roleManager.CreateAsync(role).Result;
-        //    //}
+        public static async Task SeedData(IServiceProvider serviceProvider)
+        {
+            await InitializeAsync(serviceProvider);
+            await SeedSomeUsers(serviceProvider);
 
-        //    //if (!roleManager.RoleExistsAsync("Admin").Result)
-        //    //{
-        //    //    Roles role = new Roles();
-        //    //    role.Name = "Admin";
-        //    //    role.Description = "Performs all operations.";
-        //    //    IdentityResult identityResult = roleManager.CreateAsync(role).Result;
-        //    //}
-        //}
+            var UserManager = serviceProvider.GetRequiredService<UserManager<Users>>();
+
+
+        }
+
 
     }
 }

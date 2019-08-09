@@ -16,8 +16,7 @@ namespace Praksa2.Service.Helpers
         {
             //Map Users
             CreateMap<Users, UsersDto>();
-            CreateMap<UsersDto, Users>();
-            
+            CreateMap<UsersDto, Users>();          
         }
     }
 }

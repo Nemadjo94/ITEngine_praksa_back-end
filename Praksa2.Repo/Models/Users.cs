@@ -22,7 +22,6 @@ namespace Praksa2.Repo.Models
         //Required for soft deleting
         public bool IsDeleted { get; set; }
 
-        //public virtual ICollection<Users> UsersCollection { get; set; }
     }
 
 }

@@ -22,6 +22,7 @@ using Swashbuckle.AspNetCore.Swagger;
 using Praksa2.Repo.Models;
 using Microsoft.AspNetCore.Identity;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.AspNetCore.Http;
 
 namespace Praksa2.API
 {
@@ -102,6 +103,7 @@ namespace Praksa2.API
 
             // Add Mvc
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_2);
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -116,6 +118,8 @@ namespace Praksa2.API
                 // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
+            app.UseHttpsRedirection();
+            app.UseStaticFiles();
             // Use Authentication
             app.UseAuthentication();
 
@@ -138,6 +142,11 @@ namespace Praksa2.API
                 c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
                 c.RoutePrefix = string.Empty;
             });
+
+            app.UseMvc();
+            //app.MapWhen(
+            //        c => !c.Request.Path.Value.StartsWith("/api"),
+            //     b => b.Run(async c => await c.Response.WriteAsync("This is not MVC!")));
 
             // Ensure our tables are created
             context.Database.EnsureCreated();

@@ -37,7 +37,7 @@ namespace Praksa2.API
                 }
                 catch (Exception exc)
                 {
-                    
+                    throw new Exception(exc.Message);
                 }
             }
             host.Run();
